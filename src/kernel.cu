@@ -417,12 +417,15 @@ __global__ void kernUpdateVelNeighborSearchScattered(
 
   glm::ivec3 boid_i = (pos[index] - gridMin) * inverseCellWidth;
   // - Identify which cells may contain neighbors. This isn't always 8.
-  for (int i = boid_i.z - 1; i <= boid_i.z; i++){
-    for (int j = boid_i.y - 1; j <= boid_i.y; j++){
-      for (int k = boid_i.x - 1; k <= boid_i.x; k++){
+  for (int i = boid_i.z - 1; i <= boid_i.z + 1; i++){
+    for (int j = boid_i.y - 1; j <= boid_i.y + 1; j++){
+      for (int k = boid_i.x - 1; k <= boid_i.x + 1; k++){
         int _x = imax(k, 0);
         int _y = imax(j, 0);
         int _z = imax(i, 0);
+        _x = imin(_x, gridResolution - 1);
+        _y = imin(_y, gridResolution - 1);
+        _z = imin(_z, gridResolution - 1);
         int i_flatten = gridIndex3Dto1D(_x, _y, _z, gridResolution);
         if (gridCellStartIndices[i_flatten] != -1 && gridCellEndIndices[i_flatten] !=-1){
           // - For each cell, read the start/end indices in the boid pointer array.
@@ -497,12 +500,15 @@ __global__ void kernUpdateVelNeighborSearchCoherent(
     // - Identify which cells may contain neighbors. This isn't always 8.
     //   DIFFERENCE: For best results, consider what order the cells should be
     //   checked in to maximize the memory benefits of reordering the boids data.
-    for (int i = boid_i.x - 1; i <= boid_i.x; i++){
-      for (int j = boid_i.y - 1; j <= boid_i.y; j++){
-        for (int k = boid_i.z - 1; k <= boid_i.z; k++){
-          int _z = imax(i, 0);
-          int _y = imax(j, 0);
+    for (int i = boid_i.z - 1; i <= boid_i.z + 1; i++){
+      for (int j = boid_i.y - 1; j <= boid_i.y + 1; j++){
+        for (int k = boid_i.x - 1; k <= boid_i.x + 1; k++){
           int _x = imax(k, 0);
+          int _y = imax(j, 0);
+          int _z = imax(i, 0);
+          _x = imin(_x, gridResolution - 1);
+          _y = imin(_y, gridResolution - 1);
+          _z = imin(_z, gridResolution - 1);
           int i_flatten = gridIndex3Dto1D(_x, _y, _z, gridResolution);
           if (gridCellStartIndices[i_flatten] != -1){
             // - For each cell, read the start/end indices in the boid pointer array.
@@ -652,15 +658,15 @@ void Boids::stepSimulationCoherentGrid(float dt) {
   checkCUDAErrorWithLine("kernGetCoherentVal Failed");
 
   kernUpdateVelNeighborSearchCoherent <<< fullBlocksPerGrid_boids, blockSize >>> (numObjects, gridSideCount, gridMinimum,
-    gridInverseCellWidth, gridCellWidth, dev_gridCellStartIndices, dev_gridCellEndIndices, dev_coherent_pos, dev_coherent_vel, dev_vel2);
+    gridInverseCellWidth, gridCellWidth, dev_gridCellStartIndices, dev_gridCellEndIndices, dev_coherent_pos, dev_coherent_vel, dev_vel1);
   checkCUDAErrorWithLine("kernUpdateVelNeighborSearchScattered Failed");
 
-  kernUpdatePos <<< fullBlocksPerGrid_boids, blockSize >>> (numObjects, dt, dev_coherent_pos, dev_vel2);
+  kernUpdatePos <<< fullBlocksPerGrid_boids, blockSize >>> (numObjects, dt, dev_coherent_pos, dev_vel1);
   checkCUDAErrorWithLine("kernUpdatePos Failed");
 
   // don't forget to put the pos & vel back!!!
   std::swap(dev_pos, dev_coherent_pos);
-  std::swap(dev_vel1, dev_vel2);
+  // std::swap(dev_vel1, dev_vel2);
 }
 
 void Boids::endSimulation() {
