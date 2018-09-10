@@ -5,7 +5,6 @@ Project 1 - Flocking**
 * [LinkedIn](https://www.linkedin.com/in/yusun3/)
 * Tested on: Windows 10 , i7-6700HQ CPU @ 2.60GHz × 8 , GeForce GTX 960M/PCIe/SSE2, 7.7GB Memory (Personal Laptop)
 
-### (TODO: Your README)
 
 Below is a demo run of the flocking algorithm @ 10000 boids and 128 as the blocksize
 ![](images/demo.gif)
